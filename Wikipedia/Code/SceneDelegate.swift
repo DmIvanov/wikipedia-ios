@@ -35,6 +35,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         UNUserNotificationCenter.current().delegate = appViewController
         appViewController.launchApp(in: window, waitToResumeApp: appNeedsResume)
+        
+        if let userActivity = connectionOptions.userActivities.first {
+            process(userActivity: userActivity)
+        }
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -67,6 +71,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        process(userActivity: userActivity)
+    }
+    
+    func process(userActivity: NSUserActivity) {
         guard let appViewController else {
             return
         }
