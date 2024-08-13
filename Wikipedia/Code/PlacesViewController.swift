@@ -55,6 +55,9 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
     fileprivate var currentSearchRegion: MKCoordinateRegion?
     fileprivate var performDefaultSearchOnNextMapRegionUpdate = false
     fileprivate var isMovingToRegion = false
+    
+    // property to store the pending location while the view is being loaded
+    fileprivate var pendingLocation: CLLocation?
 
     fileprivate var previouslySelectedArticlePlaceIdentifier: Int?
     fileprivate var didYouMeanSearch: PlaceSearch?
@@ -249,8 +252,12 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
             return
         }
         
-        locationManager.startMonitoringLocation()
+        // for this task we don't want to start monitoring location on view loaded
+        // locationManager.startMonitoringLocation()
+        
         mapView.showsUserLocation = true
+        
+        moveToCoordinateIfNeeded()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -350,6 +357,15 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
             if countOfAnimatingAnnotations == 0 {
                 selectVisibleKeyToSelectIfNecessary()
             }
+        }
+    }
+    
+    func moveToCoordinateIfNeeded(coordinate: CLLocation? = nil) {
+        if let coordinate {
+            zoomAndPanMapView(toLocation: coordinate)
+        } else if let pendingLocation {
+            zoomAndPanMapView(toLocation: pendingLocation)
+            self.pendingLocation = nil
         }
     }
 
@@ -1950,6 +1966,19 @@ class PlacesViewController: ViewController, UISearchBarDelegate, ArticlePopoverV
         let displayTitle = article.displayTitle ?? title
         let searchResult = MWKSearchResult(articleID: 0, revID: 0, title: title, displayTitle: displayTitle, displayTitleHTML: displayTitleHTML, wikidataDescription: article.wikidataDescription, extract: article.snippet, thumbnailURL: article.thumbnailURL, index: nil, titleNamespace: nil, location: article.location)
         currentSearch = PlaceSearch(filter: .top, type: .location, origin: .user, sortStyle: .links, string: nil, region: region, localizedDescription: title, searchResult: searchResult, siteURL: articleURL.wmf_site)
+    }
+    
+    @objc public func showPlacesAppURL(with coordinatesRepresentation: String) {
+        let components = coordinatesRepresentation.components(separatedBy: " ")
+        guard components.count == 2,
+        let latitude = Double(components[0]),
+        let longitude = Double(components[1]) else { return }
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        if isViewLoaded {
+            moveToCoordinateIfNeeded(coordinate: location)
+        } else {
+            pendingLocation = CLLocation(latitude: latitude, longitude: longitude)
+        }
     }
     
     fileprivate func searchForFirstSearchSuggestion() {

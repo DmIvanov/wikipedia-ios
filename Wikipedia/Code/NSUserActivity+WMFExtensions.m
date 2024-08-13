@@ -228,6 +228,8 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
         }
     } else if ([self wmf_contentURL]) {
         return WMFUserActivityTypeContent;
+    } else if ([self wmf_placesAppCoordinates]) {
+        return WMFUserActivityTypePlaces;
     } else if ([self.activityType isEqualToString:CSQueryContinuationActionType]) {
         return WMFUserActivityTypeSearchResults;
     } else {
@@ -266,6 +268,25 @@ __attribute__((annotate("returns_localized_nsstring"))) static inline NSString *
 
 - (NSURL *)wmf_contentURL {
     return self.userInfo[@"WMFURL"];
+}
+
+// Sting in format "<lat> <lon>"
+- (NSString *)wmf_placesAppCoordinates {
+    NSURLComponents *components = [[NSURLComponents alloc] initWithURL:self.webpageURL resolvingAgainstBaseURL:YES];
+    if (![components.path hasSuffix:@"/placesApp"]) {
+        return nil;
+    }
+    NSNumber *latitude, *longitude;
+    for (NSURLQueryItem *item in components.queryItems) {
+        if ([item.name isEqualToString:@"lat"]) {
+            latitude = [NSNumber numberWithDouble:[item.value doubleValue]];
+        }
+        if ([item.name isEqualToString:@"lon"]) {
+            longitude = [NSNumber numberWithDouble:[item.value doubleValue]];
+        }
+    }
+    
+    return  [NSString stringWithFormat:@"%@ %@", latitude.stringValue, longitude.stringValue];;
 }
 
 + (NSURLComponents *)wmf_baseURLComponentsForActivityOfType:(WMFUserActivityType)type {

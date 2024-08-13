@@ -385,7 +385,7 @@ NSString *const WMFLanguageVariantAlertsLibraryVersion = @"WMFLanguageVariantAle
 
 - (void)appWillEnterForegroundWithNotification:(NSNotification *)note {
     // Don't access anything that can't be accessed in the background without starting a background task. For example, don't use anything in the shared app container like all of the Core Data persistent stores
-    self.unprocessedUserActivity = nil;
+    //self.unprocessedUserActivity = nil;
     self.unprocessedShortcutItem = nil;
 }
 
@@ -1205,11 +1205,16 @@ NSString *const WMFLanguageVariantAlertsLibraryVersion = @"WMFLanguageVariantAle
             [self dismissPresentedViewControllers];
             [self setSelectedIndex:WMFAppTabTypePlaces];
             [self.currentTabNavigationController popToRootViewControllerAnimated:animated];
-            NSURL *articleURL = activity.wmf_linkURL;
-            if (articleURL) {
+            NSURL *url = activity.wmf_linkURL;
+            if (url) {
                 // For "View on a map" action to succeed, view mode has to be set to map.
                 [[self placesViewController] updateViewModeToMap];
-                [[self placesViewController] showArticleURL:articleURL];
+                NSString *placesAppCoordinates = [activity wmf_placesAppCoordinates];
+                if (placesAppCoordinates) {
+                    [[self placesViewController] showPlacesAppURLWith:placesAppCoordinates];
+                } else {
+                    [[self placesViewController] showArticleURL:url];
+                }
             }
         } break;
         case WMFUserActivityTypeContent: {
